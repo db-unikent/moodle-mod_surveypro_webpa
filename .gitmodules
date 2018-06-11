@@ -6,3 +6,7 @@
 	path = field/paselect
 	url = git@gitlab.kent.ac.uk:uelt/moodle-surveyprofield_paselect.git
 	branch = master
+[submodule "report/pagrade"]
+	path = report/pagrade
+	url = git@gitlab.kent.ac.uk:uelt/moodle-surveyproreport_pagrade.git
+	branch = master
