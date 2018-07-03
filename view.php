@@ -61,7 +61,8 @@ if ($action != SURVEYPRO_NOACTION) {
 
 // Calculations.
 $context = context_module::instance($cm->id);
-$submissionman = new mod_surveypro_submission($cm, $context, $surveypro);
+//$submissionman = new mod_surveypro_submission($cm, $context, $surveypro);
+$submissionman = new mod_surveypro_kent_submission($cm, $context, $surveypro);
 $submissionman->setup($submissionid, $action, $view, $confirm, $searchquery);
 
 if (empty($force)) {
@@ -88,7 +89,8 @@ if (!empty($justsubmitted)) {
     $submissionman->actions_feedback(); // Action feedback after PAGE.
 
     $submissionman->show_action_buttons($tifirst, $tilast);
-    $submissionman->display_submissions_table();
+    //$submissionman->display_submissions_table();
+    $submissionman->display_kent_submissions_table();
     $submissionman->trigger_event(); // Event: all_submissions_viewed.
 }
 
