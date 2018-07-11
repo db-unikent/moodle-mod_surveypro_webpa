@@ -288,7 +288,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         if(count($sortOrder)){
             $sql .= " ORDER BY ".implode(',', $sortOrder);
         } else {
-            $sql .= " ORDER BY group_name, u.lastname, u.firstname, ss.timecreated, pa_lastname, pa_firstname";
+            $sql .= " ORDER BY group_name, u.lastname, u.firstname, pa_lastname, pa_firstname";
         }
 
         #echo "<p>$sql</p>";print_r($whereparams);
@@ -638,7 +638,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 }
 
                 // Assessor
-                if($prev_assessor == $submission->id) {
+                if($canseeotherssubmissions && $prev_assessor == $submission->id) {
                     $tablerow[] = "";
                     $tablerow[] = "";
                 }
@@ -748,6 +748,15 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                     $paramlink = array('id' => 'view_submission_'.$submissionsuffix, 'title' => $readonlyaccessstr);
                     $icons = $OUTPUT->action_icon($link, $readonlyicn, null, $paramlink);
                 }
+                elseif($submission->id == $USER->id) {
+                    $paramurl = $paramurlbase;
+                    $paramurl['paid'] = $pa_submission->id;
+                    $paramurl['view'] = 1;
+                    $link = new moodle_url('/mod/surveypro/view_form.php', $paramurl);
+                    $paramlink = array('id' => 'new_submission_'.$this->surveypro->id, 'title' => 'New submission');
+                    $icons = $OUTPUT->action_icon($link, $attributeicn, null, $paramlink);
+                }
+
 
                 // Duplicate.
                 /* Don't think we want to duplicate peer assessments giving someone more than one assessment from same person
@@ -812,6 +821,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 }
                 */
                 $tablerow[] = $icons;
+
+                #print_r($tablerow);echo "<br>-----<br>";
 
                 // Add row to the table.
                 $table->add_data($tablerow);
