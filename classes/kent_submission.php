@@ -79,6 +79,11 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
     protected $pa_cm;
 
     /**
+     * @int Peer assessment total sql query rowcount
+     */
+    protected $pa_total = 0;
+
+    /**
      * Get submissions sql.
      *
      * Teachers is the role of users usually accessing reports.
@@ -206,15 +211,19 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                                              AND sa.content = u1.id
              INNER JOIN (".$sqlanswer.") a ON a.submissionid = sa.submissionid";
         }
-        
-        $sql = "SELECT DISTINCT ". user_picture::fields("u") .", cm.groupingid, cm.module, cm.instance, mo.name as module_name,
+
+        $sqlSelect = "SELECT DISTINCT ". user_picture::fields("u") .", cm.groupingid, cm.module, cm.instance, mo.name as module_name,
                         g.name as grouping_name, gg.groupid, gr.name as group_name, si.plugin, si.hidden, spa.variable, spa.options as fixed_value,
                         ss.id as submissionid, ss.surveyproid, ss.status, ss.userid, ss.timecreated, ss.timemodified,
                         sa.itemid as answer_id, sa.content, 
                         u1.id as pa_id,u1.picture as pa_picture,u1.firstname as pa_firstname,
                         u1.lastname as pa_lastname,u1.firstnamephonetic as pa_firstnamephonetic,
                         u1.lastnamephonetic as pa_lastnamephonetic,u1.middlename as pa_middlename,
-                        u1.alternatename as pa_alternatename,u1.imagealt as pa_imagealt,u1.email as pa_email
+                        u1.alternatename as pa_alternatename,u1.imagealt as pa_imagealt,u1.email as pa_email";
+        $sqlSelectCount = "SELECT COUNT(u.id) as pa_total";
+
+
+        $sql = $sqlSelect."
                   FROM {course_modules} cm
             INNER JOIN {modules} mo ON mo.id = cm.module
             INNER JOIN {groupings} g ON g.id = cm.groupingid
@@ -258,6 +267,12 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             $sql .= ' AND '.str_replace(array_keys($replace), array_values($replace), $wherefilter);
             $whereparams = $whereparams + $wherefilterparams;
         }
+
+
+        $sqlCount = str_replace($sqlSelect, $sqlSelectCount, $sql);
+
+        $total = $DB->get_record_sql($sqlCount, $whereparams);
+        $this->pa_total = $total->pa_total;
 
         /*
          * SQL Order by group, creation
@@ -505,8 +520,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
         $neverstr = get_string('never');
 
-        $counter = $this->get_counter($table);
-        $table->pagesize(20, $counter['closedsubmissions'] + $counter['inprogresssubmissions']);
+
 
         /*
         $this->display_submissions_overview($counter['allusers'],
@@ -557,6 +571,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                     echo "<h4>My assessments for group " . $this->group_name . "</h4>";
                 }
             }
+
+        $table->pagesize(20, $this->pa_total);
 
         $submissions = $DB->get_recordset_sql($sql, $whereparams, $table->get_page_start(), $table->get_page_size());
 
