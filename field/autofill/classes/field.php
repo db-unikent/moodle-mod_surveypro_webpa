@@ -616,7 +616,7 @@ EOS;
                         $label .= $COURSE->id;
                         break;
                     case SURVEYPROFIELD_AUTOFILL_CONTENTELEMENT14: // Coursename.
-                        $label .= $COURSE->name;
+                        $label .= $COURSE->fullname;
                         break;
                     default:                                       // Label.
                         $label .= $this->{'element'.$index};
