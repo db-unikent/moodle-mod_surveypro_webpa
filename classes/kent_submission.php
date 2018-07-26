@@ -49,6 +49,11 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
     protected $self_assessed_flag = false;
 
     /**
+     * @boolean Can students edit/change their submissions?
+     */
+    protected $allow_edit_flag = false;
+
+    /**
      * @int Number of groups in activity - or user part of if student view
      */
     protected $group_count = 0;
@@ -339,6 +344,9 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             }
             elseif($row->variable == "pa_select_self" && strtoupper($row->options{0}) == "Y") {
                 $this->self_assessed_flag = true;
+            }
+            elseif($row->variable == "pa_select_edit" && strtoupper($row->options{0}) == "Y") {
+                $this->allow_edit_flag = true;
             }
         }
 
@@ -743,6 +751,15 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                         $displayediticon = $caneditotherssubmissions;
                     }
                 }
+
+                //New - allow edit now set as paselect variable in setup
+                if ($this->allow_edit_flag && $ismine) {
+                    $displayediticon = true;
+                }
+                if (!$this->allow_edit_flag) {
+                    $displayediticon = false;
+                }
+
 
                 if ($displayediticon && $submission->submissionid) {
                     $paramurl['view'] = SURVEYPRO_EDITRESPONSE;
