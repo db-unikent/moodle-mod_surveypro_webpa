@@ -305,8 +305,8 @@ class surveyprofield_radiobutton_field extends mod_surveypro_itembase {
      * @return array of felds
      */
     public function item_get_multilang_fields() {
-        $fieldlist = parent::item_get_multilang_fields();
-        $fieldlist['radiobutton'] = array('content', 'options', 'labelother', 'defaultvalue');
+        $fieldlist = array();
+        $fieldlist[$this->plugin] = array('content', 'extranote', 'options', 'labelother', 'defaultvalue');
 
         return $fieldlist;
     }
@@ -577,7 +577,7 @@ EOS;
                 // I do not want JS form validation if the page is submitted through the "previous" button.
                 // I do not want JS field validation even if this item is required BUT disabled. See: MDL-34815.
                 // Because of this, I simply add a dummy star to the item and the footer note about mandatory fields.
-                $starplace = ($this->position != SURVEYPRO_POSITIONLEFT) ? $this->itemname.'_extrarow' : $this->itemname.'_group';
+                $starplace = ($this->position == SURVEYPRO_POSITIONTOP) ? $this->itemname.'_extrarow' : $this->itemname.'_group';
                 $mform->_required[] = $starplace;
             }
 

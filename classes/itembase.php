@@ -520,11 +520,11 @@ class mod_surveypro_itembase {
             $userchoosedname = $this->plugin.'_001';
             $basename = $this->plugin;
         } else {
-            $userchoosedname = $record->variable;
-            if (preg_match('~^(.*)_[0-9]{3}$~', $record->variable, $matches)) {
+            $userchoosedname = clean_param($record->variable, PARAM_TEXT);
+            if (preg_match('~^(.*)_[0-9]{3}$~', $userchoosedname, $matches)) {
                 $basename = $matches[1];
             } else {
-                $basename = $record->variable;
+                $basename = $userchoosedname;
             }
         }
         $testname = $userchoosedname;
@@ -686,11 +686,21 @@ class mod_surveypro_itembase {
             return;
         }
 
-        if ($multilangfields = $this->item_get_multilang_fields()) {
-            foreach ($multilangfields as $fieldnames) {
-                foreach ($fieldnames as $fieldname) {
-                    $stringkey = $this->{$fieldname};
-                    $this->{$fieldname} = get_string($stringkey, 'surveyprotemplate_'.$template);
+        if ($multilangfields = $this->item_get_multilang_fields()) { // Pagebreak and fieldsetend have no multilang_fields.
+            foreach ($multilangfields as $plugin) {
+                foreach ($plugin as $fieldname) {
+                    // Backward compatibility.
+                    // In the frame of https://github.com/kordan/moodle-mod_surveypro/pull/447 few multilang fields were added.
+                    // This was really a mandatory addition but,
+                    // opening surveypros created (from mastertemplates) before this addition,
+                    // I may find that they don't have new added fields filled in the database
+                    // so the corresponding property $this->{$fieldname} does not exist.
+                    if (isset($this->{$fieldname})) {
+                        $stringkey = $this->{$fieldname};
+                        $this->{$fieldname} = get_string($stringkey, 'surveyprotemplate_'.$template);
+                    } else {
+                        $this->{$fieldname} = '';
+                    }
                 }
             }
         }
@@ -876,18 +886,6 @@ class mod_surveypro_itembase {
         $record->reserved = 0;
         $record->formpage = 0;
         $record->timecreated = time();
-    }
-
-    /**
-     * Make the list of multilang plugin fields.
-     *
-     * @return array of felds
-     */
-    public function item_get_multilang_fields() {
-        $fieldlist = array();
-        $fieldlist[$this->plugin] = array('content');
-
-        return $fieldlist;
     }
 
     /**

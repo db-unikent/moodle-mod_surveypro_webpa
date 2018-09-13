@@ -299,8 +299,8 @@ class surveyprofield_select_field extends mod_surveypro_itembase {
      * @return array of felds
      */
     public function item_get_multilang_fields() {
-        $fieldlist = parent::item_get_multilang_fields();
-        $fieldlist['select'] = array('content', 'options', 'labelother', 'defaultvalue');
+        $fieldlist = array();
+        $fieldlist[$this->plugin] = array('content', 'extranote', 'options', 'labelother', 'defaultvalue');
 
         return $fieldlist;
     }
@@ -526,7 +526,7 @@ EOS;
                 // I do not want JS form validation if the page is submitted through the "previous" button.
                 // I do not want JS field validation even if this item is required BUT disabled. See: MDL-34815.
                 // Because of this, I simply add a dummy star to the item and the footer note about mandatory fields.
-                if ($this->position != SURVEYPRO_POSITIONLEFT) {
+                if ($this->position == SURVEYPRO_POSITIONTOP) {
                     $starplace = $this->itemname.'_extrarow';
                 } else {
                     $starplace = ($this->labelother) ? $this->itemname.'_group' : $this->itemname;
@@ -581,6 +581,13 @@ EOS;
 
         if ($data[$this->itemname] == SURVEYPRO_INVITEVALUE) {
             $errors[$errorkey] = get_string('uerr_optionnotset', 'surveyprofield_select');
+            return;
+        }
+
+        if (!empty($this->labelother)) {
+            if (($data[$this->itemname] == 'other') && empty($data[$this->itemname.'_text']) ) {
+                $errors[$errorkey] = get_string('uerr_missingothertext', 'surveyprofield_select');
+            }
         }
     }
 

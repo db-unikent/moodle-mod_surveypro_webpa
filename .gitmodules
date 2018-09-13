@@ -1,0 +1,12 @@
+[submodule "template/peerassessment"]
+	path = template/peerassessment
+	url = git@gitlab.kent.ac.uk:uelt/moodle-surveyprotemplate_peerassessment.git
+	branch = master
+[submodule "field/paselect"]
+	path = field/paselect
+	url = git@gitlab.kent.ac.uk:uelt/moodle-surveyprofield_paselect.git
+	branch = master
+[submodule "report/pagrade"]
+	path = report/pagrade
+	url = git@gitlab.kent.ac.uk:uelt/moodle-surveyproreport_pagrade.git
+	branch = master
