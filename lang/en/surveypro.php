@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['modulename'] = 'Surveypro';
-$string['modulename_help'] = 'Surveypro allows the creation of custom surveys as far as built in surveys like ATTLS, COLLES and CRITICAL INCIDENTS. You can also save and reuse parts or whole of your own custom survey.';
+$string['modulename_help'] = 'This has been adapted by Kent to incorporate Moodle Peer Assessment (MPA). An MPA can be attached to a current group assignment on this course. Surveypro allows the creation of custom surveys as far as built in surveys like ATTLS, COLLES and CRITICAL INCIDENTS. You can also save and reuse parts or whole of your own custom survey.';
 $string['modulename_link'] = 'mod/surveypro/view';
 $string['modulenameplural'] = 'surveys';
 $string['pluginname'] = 'Surveypro';
@@ -62,6 +62,7 @@ $string['tabmtemplatename'] = 'Master templates';
 $string['action_help'] = 'Operate on elements already present in the survey with the following action.';
 $string['action'] = 'Preexisting elements';
 $string['addnewsubmission'] = 'New response';
+$string['addnewassessment'] = 'New assessment';
 $string['anonymous_help'] = 'The responses management table will not show the owner of the responses and reports and export will be anonymous.';
 $string['anonymous'] = 'Anonymous responses';
 $string['answerisnoanswer'] = 'Answer refused';
@@ -496,7 +497,7 @@ $string['verbose'] = 'Pretty (for human reading)';
 $string['versionmismatch'] = 'Version mismatch for {$a->plugin} {$a->type} plugin. Template uses version: {$a->currentversion} while your surveypro plugin uses version {$a->versiondisk}';
 $string['visiblesonly_help'] = 'Include in this template only visibles elements.';
 $string['visiblesonly'] = 'Visibles elements only';
-$string['welcome_emptysurvey'] = 'To create a new survey you can add elements one by one to build the survey that best suits your needs<br />or apply a master template to get a standard survey all at once.';
+$string['welcome_emptysurvey'] = 'To create a Moodle Peer Assessment (MPA), select the Peer Assessment option from the <i>Master templates</i> dropdown and click the <b>Apply</b> button next to it.<br />To create a new survey you can add elements one by one to build the survey that best suits your needs<br />or apply a master template to get a standard survey all at once.';
 $string['welcome_dataexport'] = 'Use this page to export responses of this survey. <br />
 A statistic software format is available such as a human readable one. Export content depends on the "{$a}" choosen for each element (whether available).';
 $string['welcome_dataimport'] = 'Use this page to import responses into this survey. <br />
