@@ -636,6 +636,7 @@ EOS;
             $errors[$errorkey] = get_string('uerr_optionnotset', 'surveyprofield_radiobutton');
             return;
         }
+
     }
 
     /**
