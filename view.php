@@ -59,10 +59,22 @@ if ($action != SURVEYPRO_NOACTION) {
     require_sesskey();
 }
 
+//Kent check if this is a Moodle Peer Assessment surveypro
+if($DB->count_records('surveypro_item', array('surveyproid' => $surveypro->id, 'plugin'=> 'paselect'))) {
+    $mpa_flag = true;
+} else {
+    $mpa_flag = false;
+}
+
 // Calculations.
 $context = context_module::instance($cm->id);
-//$submissionman = new mod_surveypro_submission($cm, $context, $surveypro);
-$submissionman = new mod_surveypro_kent_submission($cm, $context, $surveypro);
+//Kent
+if($mpa_flag) {
+    $submissionman = new mod_surveypro_kent_submission($cm, $context, $surveypro);
+} else {
+    $submissionman = new mod_surveypro_submission($cm, $context, $surveypro);
+}
+
 $submissionman->setup($submissionid, $action, $view, $confirm, $searchquery);
 
 if (empty($force)) {
@@ -83,15 +95,22 @@ echo $OUTPUT->header();
 
 new mod_surveypro_tabs($cm, $context, $surveypro, SURVEYPRO_TABSUBMISSIONS, SURVEYPRO_SUBMISSION_MANAGE);
 
-if (!empty($justsubmitted)) {
-    $submissionman->show_thanks_page($responsestatus, $formview);
-} else {
-    $submissionman->actions_feedback(); // Action feedback after PAGE.
+//Kent
+if($mpa_flag) {
+    #$submissionman->actions_feedback(); // Action feedback after PAGE.
 
-    $submissionman->show_action_buttons($tifirst, $tilast);
-    //$submissionman->display_submissions_table();
     $submissionman->display_kent_submissions_table();
     $submissionman->trigger_event(); // Event: all_submissions_viewed.
+} else {
+    if (!empty($justsubmitted)) {
+        $submissionman->show_thanks_page($responsestatus, $formview);
+    } else {
+        $submissionman->actions_feedback(); // Action feedback after PAGE.
+
+        $submissionman->show_action_buttons($tifirst, $tilast);
+        $submissionman->display_submissions_table();
+        $submissionman->trigger_event(); // Event: all_submissions_viewed.
+    }
 }
 
 // Finish the page.
