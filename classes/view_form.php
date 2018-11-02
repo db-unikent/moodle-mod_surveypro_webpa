@@ -431,7 +431,6 @@ class mod_surveypro_view_form extends mod_surveypro_formbase {
             $event = \mod_surveypro\event\submission_modified::create($eventdata);
             $event->trigger();
         }
-
         // Before returning, set two class properties.
         $this->set_submissionid($submission->id);
         $this->status = $submission->status;
@@ -1173,6 +1172,24 @@ class mod_surveypro_view_form extends mod_surveypro_formbase {
                     } else {
                         $groupuser = in_array($submission->userid, $mygroupmates);
                     }
+                }
+            }
+        }
+
+        //Kent add allow edit
+        if ($this->view == SURVEYPRO_EDITRESPONSE && $submission->status == 0) {
+            $where = array('surveyproid' => $submission->surveyproid, 'variable' => 'pa_select_edit');
+            $sql = "SELECT options
+                              FROM {surveyprofield_paselect} sp
+                            INNER JOIN {surveypro_item} si ON si.surveyproid = :surveyproid
+                                                          AND si.id = sp.itemid
+                              WHERE sp.variable = :variable";
+
+            $options = $DB->get_recordset_sql($sql, $where);
+
+            foreach ($options as $option) {
+                if(strtoupper($option->options{0}) == "Y") {
+                    $submission->status = SURVEYPRO_STATUSINPROGRESS;
                 }
             }
         }

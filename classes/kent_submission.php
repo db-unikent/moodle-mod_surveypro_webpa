@@ -35,13 +35,13 @@ require_once($CFG->dirroot.'/mod/surveypro/classes/submission.php');
  */
 class mod_surveypro_kent_submission extends mod_surveypro_submission {
     /**
-     * @int Peer assessed activity course_module id
+     * @int Moodle Peer Assessed activity/course module id
      */
-    protected $peer_assessed_activity = 0;
+    protected $mpa_cm_id = 0;
     /**
-     * @var Name of peer assessed activity
+     * @var Moodle Peer Assessed activity/course module name
      */
-    protected $peer_assessed_name;
+    protected $mpa_cm_name;
 
     /**
      * @boolean Can students assess themselves?
@@ -54,9 +54,14 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
     protected $allow_edit_flag = false;
 
     /**
-     * @int Number of groups in activity - or user part of if student view
+     * @int Course group mode
      */
-    protected $group_count = 0;
+    protected $groupmode = 0;
+
+    /**
+     * @int Number of viewable groups in activity/course module
+     */
+    protected $group_total = 0;
 
     /**
      * @var Group name if one group
@@ -81,12 +86,12 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
     /**
      * @var Peer assessment object
      */
-    protected $pa_cm;
+    protected $mpa_cm;
 
     /**
      * @int Peer assessment total sql query rowcount
      */
-    protected $pa_total = 0;
+    protected $mpa_total = 0;
 
     /**
      * Get submissions sql.
@@ -105,13 +110,12 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
      * @return array($sql, $whereparams);
      */
     public function get_pa_submissions_sql($table) {
-        global $DB, $COURSE, $USER;
+        global $DB, $USER;
 
         $canviewhiddenactivities = has_capability('moodle/course:viewhiddenactivities', $this->context);
         $canseeotherssubmissions = has_capability('mod/surveypro:seeotherssubmissions', $this->context);
-        $canaccessallgroups = has_capability('moodle/site:accessallgroups', $this->context);
 
-        $coursecontext = context_course::instance($COURSE->id);
+        $coursecontext = context_course::instance($this->mpa_cm->course);
 
         /*$enrolsql =
         SELECT DISTINCT eu2_u.id FROM {user} eu2_u
@@ -138,7 +142,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                                AND u.deleted = 0
             INNER JOIN {user_enrolments} ej ON ej.userid = u.id
             INNER JOIN {enrol} en ON en.id = ej.enrolid
-                                 AND en.courseid = cm.course";
+                                 AND en.courseid = gr.courseid";
         }
 
         $u1Sql = "";
@@ -147,9 +151,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                                AND u1.deleted = 0
             INNER JOIN {user_enrolments} ej1 ON ej1.userid = u1.id
             INNER JOIN {enrol} en1 ON en1.id = ej1.enrolid
-                                 AND en1.courseid = cm.course";
+                                 AND en1.courseid = gr.courseid";
         }
-
 
 
         if (!count($this->mygroups)) { // User is not in any group.
@@ -158,7 +161,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             return array("", array('userid' => -1));
         }
         else {
-            $gpSql = " AND gg.groupid in (".implode(",", $this->mygroups).")";
+            $grSql = " AND gr.id in (".implode(",", $this->mygroups).")";
         }
 
         if($this->self_assessed_flag) {
@@ -217,25 +220,20 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
              INNER JOIN (".$sqlanswer.") a ON a.submissionid = sa.submissionid";
         }
 
-        $sqlSelect = "SELECT DISTINCT ". user_picture::fields("u") .", cm.groupingid, cm.module, cm.instance, mo.name as module_name,
-                        g.name as grouping_name, gg.groupid, gr.name as group_name, si.plugin, si.hidden, spa.variable, spa.options as fixed_value,
+        $sqlSelect = "SELECT DISTINCT ". user_picture::fields("u") .",
+                        gr.id as groupid, gr.name as group_name, si.plugin, si.hidden, spa.variable, spa.options as fixed_value,
                         ss.id as submissionid, ss.surveyproid, ss.status, ss.userid, ss.timecreated, ss.timemodified,
                         sa.itemid as answer_id, sa.content, 
-                        u1.id as pa_id,u1.picture as pa_picture,u1.firstname as pa_firstname,
-                        u1.lastname as pa_lastname,u1.firstnamephonetic as pa_firstnamephonetic,
-                        u1.lastnamephonetic as pa_lastnamephonetic,u1.middlename as pa_middlename,
-                        u1.alternatename as pa_alternatename,u1.imagealt as pa_imagealt,u1.email as pa_email";
-        $sqlSelectCount = "SELECT COUNT(u.id) as pa_total";
+                        u1.id as mpa_id,u1.picture as mpa_picture,u1.firstname as mpa_firstname,
+                        u1.lastname as mpa_lastname,u1.firstnamephonetic as mpa_firstnamephonetic,
+                        u1.lastnamephonetic as mpa_lastnamephonetic,u1.middlename as mpa_middlename,
+                        u1.alternatename as mpa_alternatename,u1.imagealt as mpa_imagealt,u1.email as mpa_email";
+        $sqlSelectCount = "SELECT COUNT(u.id) as mpa_total";
 
 
         $sql = $sqlSelect."
-                  FROM {course_modules} cm
-            INNER JOIN {modules} mo ON mo.id = cm.module
-            INNER JOIN {groupings} g ON g.id = cm.groupingid
-            INNER JOIN {groupings_groups} gg ON gg.groupingid = g.id ".$gpSql."
-            INNER JOIN {groups} gr ON gr.id = gg.groupid
-                                  AND gr.courseid = cm.course
-            INNER JOIN {groups_members} gm ON gm.groupid = gg.groupid
+                  FROM {groups} gr
+            INNER JOIN {groups_members} gm ON gm.groupid = gr.id
             INNER JOIN {user} u ON u.id = gm.userid ".$uSql."
             INNER JOIN {groups_members} gm1 ON gm1.groupid = gm.groupid
             INNER JOIN {user} u1 ON ".$saSql." u1.id = gm1.userid ".$u1Sql."                             
@@ -245,8 +243,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             INNER JOIN {surveyprofield_paselect} spa ON spa.itemid = si.id
                                                     AND si.plugin = :plugin
                                                     AND spa.variable = :pa_select_student ".$searchSql."       
-                 WHERE cm.id = :peer_assessed_activity
-                   AND cm.course = :course";
+                 WHERE gr.courseid = :course".$grSql;
 
         /*
          * Creation of where parameters - first fixed ones
@@ -255,8 +252,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         $whereparams['type'] = 'field';
         $whereparams['plugin'] = 'paselect';
         $whereparams['pa_select_student'] = 'pa_select_student';
-        $whereparams['peer_assessed_activity'] = $this->peer_assessed_activity;
-        $whereparams['course'] = $COURSE->id;
+        $whereparams['mpa_cm_id'] = $this->mpa_cm_id;
+        $whereparams['course'] = $this->mpa_cm->course;
 
         //This will be standard Student view.
         if (!$canseeotherssubmissions) {
@@ -277,7 +274,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         $sqlCount = str_replace($sqlSelect, $sqlSelectCount, $sql);
 
         $total = $DB->get_record_sql($sqlCount, $whereparams);
-        $this->pa_total = $total->pa_total;
+        $this->mpa_total = $this->mpa_total;
 
         /*
          * SQL Order by group, creation
@@ -286,7 +283,11 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         $sortOrder = array();
 
         //This should now be Ok as setting table columns to not be sortable
+        $groupSortFlag = false;
         if ($table->get_sql_sort()) {
+            if (strstr($table->get_sql_sort(), "group_name")) {
+               $groupSortFlag = true;
+            }
             $sortFields = explode(',', $table->get_sql_sort());
             foreach($sortFields as $sort) {
                 if(strstr($sort, "assessor") !== false) {
@@ -294,13 +295,17 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                     $sortOrder[] = "u.firstname".strtok($sort, "assessor");
                 }
                 elseif(strstr($sort, "lastname")) {
-                    $sortOrder[] = str_replace("lastname", "pa_lastname", $sort);
+                    $sortOrder[] = str_replace("lastname", "mpa_lastname", $sort);
                 }
                 elseif(strstr($sort, "firstname")) {
-                    $sortOrder[] = str_replace("firstname", "pa_firstname", $sort);
+                    $sortOrder[] = str_replace("firstname", "mpa_firstname", $sort);
                 }
                 elseif(strpos($sort, "ns_") === false) {
                     $sortOrder[] = $sort;
+                }
+                if (!$groupSortFlag) {
+                    $sortOrder[] = "group_name ASC";
+                    $groupSortFlag = false;
                 }
             }
         }
@@ -308,21 +313,22 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         if(count($sortOrder)){
             $sql .= " ORDER BY ".implode(',', $sortOrder);
         } else {
-            $sql .= " ORDER BY group_name, u.lastname, u.firstname, pa_lastname, pa_firstname";
+            $sql .= " ORDER BY group_name, u.lastname, u.firstname, mpa_lastname, mpa_firstname";
         }
 
-        #echo "<p>$sql</p>";print_r($whereparams);
+        #print_r($total);
+        #echo "<p>$sqlCount</p>";print_r($whereparams);
 
         return array($sql, $whereparams);
     }
 
 
     /**
-     * Get Peer Assessed activity id if there is one
+     * Get Module Peer Assessed course module details
      *
-     * @return int Peer assessed activity course module id or 0
+     * @return int Module Peer Assessed course module id or 0
      */
-    public function set_peer_assessed_activity() {
+    public function set_mpa_cm() {
         global $DB;
 
         $sql = "SELECT sp.variable, sp.options
@@ -337,10 +343,15 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
         foreach ($rows as $row) {
             $option = $row->options;
-            if ($row->variable == "pa_select_activity" && strstr($option, "::")) {
-                $option = explode("::", $option);
-                $this->peer_assessed_activity = $option[0];
-                $this->peer_assessed_name = $option[1];
+            if ($row->variable == "pa_select_activity") {
+                if (strstr($option, "::")) {
+                    $option = explode("::", $option);
+                    $this->mpa_cm_id = $option[0];
+                    $this->mpa_cm_name = $option[1];
+                } else {
+                    $this->mpa_cm_id = $option;
+                    $this->mpa_cm_name = "";
+                }
             }
             elseif($row->variable == "pa_select_self" && strtoupper($row->options{0}) == "Y") {
                 $this->self_assessed_flag = true;
@@ -350,78 +361,214 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             }
         }
 
-        if($this->peer_assessed_activity) {
+        if($this->mpa_cm_id) {
             $sql = "SELECT m.name
                   FROM {course_modules} c
             INNER JOIN {modules} m ON m.id = c.module
                  WHERE c.id = :cmid";
 
-            $params = array("cmid" => $this->peer_assessed_activity);
+            $params = array("cmid" => $this->mpa_cm_id);
             $rows = $DB->get_records_sql($sql, $params);
 
             foreach ($rows as $row) {
-                $module_name = $row->name;
+                $mpa_module_name = $row->name;
             }
 
-            $this->pa_cm = get_coursemodule_from_id($module_name, $this->peer_assessed_activity, 0, false, MUST_EXIST);
+            $this->mpa_cm = get_coursemodule_from_id($mpa_module_name, $this->mpa_cm_id, 0, false, MUST_EXIST);
+
+            $this->groupmode = groups_get_activity_groupmode($this->mpa_cm, $this->mpa_cm->course);
+
             $this->set_group_details();
         }
-        return $this->peer_assessed_activity;
+        return $this->mpa_cm_id;
     }
 
-
     /**
-     * Set group_count of Peer Assessed activity
+     * Set my groups and group_total of Peer Assessed activity
      *
      * @param $groups array of group codes - if student using belonging to  a single group
      *
      * @return void
      */
-    public function set_group_details($groups = array()) {
-        global $DB, $COURSE, $USER;
-
-        $this->mygroups = array();
-
-        $sql = "SELECT gr.id, gr.name
-                  FROM {course_modules} cm
-            INNER JOIN {groupings_groups} gg ON gg.groupingid = cm.groupingid
-            INNER JOIN {groups} gr ON gr.id = gg.groupid
-                                  AND gr.courseid = cm.course 
-                 WHERE cm.id = :cmid";
-
-        $params = array('cmid' => $this->peer_assessed_activity);
-
-        foreach($groups as $key=>$group) {
-            if(is_int($group)) {
-                $groups[$key] = $group;
-            }
-            else {
-                $groups[$key] = 0;
-            }
-        }
-
-        if(count($groups)) {
-            $sql .= "AND gr.id in (". implode(',', $groups).")";
-        }
-
-        $rows = $DB->get_records_sql($sql, $params);
-
-        foreach ($rows as $row) {
-            $this->mygroups[] = $row->id;
-            $this->group_name = $row->name;
-        }
+    public function set_group_details() {
+        global $USER;
 
         $canaccessallgroups = has_capability('moodle/site:accessallgroups', $this->context);
 
-        //We want groups relating to the activity that is being assessed, not current surveypro one
-        //So switch $this->cm for $this->pa_cm in groups_get_activity_group_mode
-        $groupmode = groups_get_activity_groupmode($this->pa_cm, $COURSE);
-        if (($groupmode == SEPARATEGROUPS) && (!$canaccessallgroups)) {
-            $mygroups = groups_get_all_groups($COURSE->id, $USER->id, $this->pa_cm->groupingid);
-            $this->mygroups = array_keys($mygroups);
+        if (!$canaccessallgroups) {
+            $mygroups = groups_get_all_groups($this->mpa_cm->course, $USER->id, $this->mpa_cm->groupingid);
         }
-        $this->group_count = count($this->mygroups);
+        else {
+            $mygroups = groups_get_all_groups($this->mpa_cm->course, 0, $this->mpa_cm->groupingid);
+        }
+
+        $this->mygroups = array_keys($mygroups);
+
+        foreach ($mygroups as $row) {
+            $this->group_name = $row->name;
+        }
+        $this->group_total = count($this->mygroups);
     }
+
+
+    /**
+     * Actually display the thanks page.
+     *
+     * @param int $responsestatus
+     * @param int $formview
+     * @return varchar $message
+     */
+    public function show_kent_thanks_page($responsestatus, $formview) {
+        global $OUTPUT;
+
+        if ($responsestatus == SURVEYPRO_MISSINGMANDATORY) {
+            $a = get_string('statusinprogress', 'mod_surveypro');
+            $message = get_string('missingmandatory', 'mod_surveypro', $a);
+            echo $OUTPUT->notification($message, 'notifyproblem');
+        }
+
+        if ($responsestatus == SURVEYPRO_MISSINGVALIDATION) {
+            $a = get_string('statusinprogress', 'mod_surveypro');
+            $message = get_string('missingvalidation', 'mod_surveypro', $a);
+            echo $OUTPUT->notification($message, 'notifyproblem');
+        }
+
+        if ($formview == SURVEYPRO_EDITRESPONSE) {
+            $message = get_string('basic_editthanks', 'mod_surveypro');
+        } else {
+            $message = get_string('basic_submitthanks', 'mod_surveypro');
+        }
+
+        return $message;
+    }
+
+    /**
+     * Display buttons in the "view submissions" page according to capabilities and already sent submissions.
+     *
+     * @param string $tifirst
+     * @param string $tilast
+     * @return void
+     */
+    public function show_kent_action_buttons($tifirst, $tilast) {
+        global $OUTPUT, $USER;
+
+        $justsubmitted = optional_param('justsubmitted', 0, PARAM_INT);
+        $formview = optional_param('formview', 0, PARAM_INT);
+        $responsestatus = optional_param('responsestatus', 0, PARAM_INT);
+
+        $utilityman = new mod_surveypro_utility($this->cm, $this->surveypro);
+
+        $cansubmit = has_capability('mod/surveypro:submit', $this->context);
+        $canignoremaxentries = has_capability('mod/surveypro:ignoremaxentries', $this->context);
+        $candeleteownsubmissions = has_capability('mod/surveypro:deleteownsubmissions', $this->context);
+        $candeleteotherssubmissions = has_capability('mod/surveypro:deleteotherssubmissions', $this->context);
+        $canseeotherssubmissions = has_capability('mod/surveypro:seeotherssubmissions', $this->context);
+
+        $cansubmitmore = $utilityman->can_submit_more();
+
+        $timenow = time();
+        $userid = ($canseeotherssubmissions) ? null : $USER->id;
+
+        $countclosed = $utilityman->has_submissions(true, SURVEYPRO_STATUSCLOSED, $userid);
+        $inprogress = $utilityman->has_submissions(true, SURVEYPRO_STATUSINPROGRESS, $userid);
+        $next = $countclosed + $inprogress + 1;
+
+        // Begin of: is the button to add one more response going to be in the page?
+        $addnew = $utilityman->is_newresponse_allowed($next);
+        // End of: is the button to add one more response going to be the page?
+
+        // Begin of: is the button to delete all responses going to be the page?
+        $deleteall = $candeleteownsubmissions;
+        $deleteall = $deleteall && $candeleteotherssubmissions;
+        $deleteall = $deleteall && empty($this->searchquery);
+        $deleteall = $deleteall && empty($tifirst); // Hide the deleteall button if only partial responses are shown.
+        $deleteall = $deleteall && empty($tilast);  // Hide the deleteall button if only partial responses are shown.
+        $deleteall = $deleteall && ($next > 1);
+        // End of: is the button to delete all responses going to be the page?
+
+        $message = "";
+        $bs_info = "alert-info";
+        if($justsubmitted) {
+            $message = $this->show_kent_thanks_page($responsestatus, $formview);
+            $message = "<h4>$message</h4>";
+        }
+        if($this->response_total >= $this->response_count) {
+            $message .= "<h5>All your " . $this->response_total . " responses are done</h5>";
+            $bs_info = "alert-success";
+            $addnew = false;
+        }
+        else {
+            $todo = $this->response_count - $this->response_total;
+            if($todo > 1) {
+                $todo .= " responses";
+            } else {
+                $todo .= " response";
+            }
+            $message .= "<h5>You have $todo to do</h5>";
+        }
+
+        if(!$this->response_count) {
+            $message = "";
+        }
+
+        if($message) {
+            echo "<div class='alert $bs_info' style='text-align:center'>$message";
+        }
+
+        $buttoncount = 0;
+        if ($addnew) {
+            $addurl = new moodle_url('/mod/surveypro/view_form.php', array('id' => $this->cm->id, 'view' => SURVEYPRO_NEWRESPONSE));
+            $buttoncount = 1;
+        }
+        if ($deleteall) {
+            $paramurl = array();
+            $paramurl['id'] = $this->cm->id;
+            $paramurl['act'] = SURVEYPRO_DELETEALLRESPONSES;
+            $paramurl['sesskey'] = sesskey();
+
+            $deleteurl = new moodle_url('/mod/surveypro/view.php', $paramurl);
+            $buttoncount++;
+        }
+
+        if ($buttoncount == 0) {
+            if($message) {
+                echo "</div>";
+            }
+            return;
+        }
+
+        if ($buttoncount == 1) {
+            if ($addnew) {
+                $label = get_string('addnewsubmission', 'mod_surveypro');
+                echo $OUTPUT->box($OUTPUT->single_button($addurl, $label, 'get'), 'clearfix mdl-align');
+                if($message) {
+                    echo "</div>";
+                }
+            }
+
+            if ($deleteall) {
+                $label = get_string('deleteallsubmissions', 'mod_surveypro');
+                echo $OUTPUT->box($OUTPUT->single_button($deleteurl, $label, 'get'), 'clearfix mdl-align');
+                if($message) {
+                    echo "</div>";
+                }
+            }
+        } else {
+            $class = array('class' => 'buttons');
+            $addbutton = new single_button($addurl, get_string('addnewsubmission', 'mod_surveypro'), 'get', $class);
+            $deleteallbutton = new single_button($deleteurl, get_string('deleteallsubmissions', 'mod_surveypro'), 'get', $class);
+
+            // This code comes from "public function confirm(" around line 1711 in outputrenderers.php.
+            // It is not wrong. The misalign comes from bootstrapbase theme and is present in clean theme too.
+            echo $OUTPUT->box_start('generalbox centerpara', 'notice');
+            echo html_writer::tag('div', $OUTPUT->render($addbutton).$OUTPUT->render($deleteallbutton), $class);
+            echo $OUTPUT->box_end();
+            if($message) {
+                echo "</div>";
+            }
+        }
+    }
+
 
     /**
      * Display the submissions table.
@@ -429,11 +576,15 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
      * @return void
      */
     public function display_kent_submissions_table() {
-        if(0 == $this->set_peer_assessed_activity()) {
-            return $this->display_submissions_table();
+        $tifirst = optional_param('tifirst', '', PARAM_ALPHA);   // First letter of the name.
+        $tilast = optional_param('tilast', '', PARAM_ALPHA);   // First letter of the surname.
+
+        if(!$this->set_mpa_cm()) {
+            print_error('noassessedmodulefound', 'mod_surveypro');
+            exit;
         }
 
-        global $CFG, $OUTPUT, $DB, $COURSE, $USER;
+        global $CFG, $OUTPUT, $DB, $USER;
 
         require_once($CFG->libdir.'/tablelib.php');
 
@@ -453,6 +604,14 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         if ($canseeotherssubmissions) {
             $table->initialbars(true);
         }
+        else {
+            echo '
+            <script type="text/javascript">
+            $(document).ready( function() {
+                $(\'.resettable\').hide();
+            });
+            </script>';
+        }
 
         $paramurl = array();
         $paramurl['id'] = $this->cm->id;
@@ -464,7 +623,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
         $tablecolumns = array();
         $tableheaders = array();
-        if($this->group_count > 1) {
+        if($this->group_total > 1) {
             $tablecolumns[] = 'group_name';
             $table->column_class('group_name', 'group_name');
             $tableheaders[] = get_string('group');
@@ -500,7 +659,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         }
         $tablecolumns[] = 'actions';
         $table->column_class('actions', 'actions');
-        $tableheaders[] = get_string('actions');
+        $tableheaders[] = "Edit or View";//get_string('actions');
 
         $table->define_columns($tablecolumns);
         $table->define_headers($tableheaders);
@@ -511,8 +670,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
         // Hide the same info whether in two consecutive rows.
         if ($canalwaysseeowner || empty($this->surveypro->anonymous)) {
-            $table->column_suppress('picture');
-            $table->column_suppress('fullname');
+            //$table->column_suppress('picture');
+            //$table->column_suppress('fullname');
         }
 
         // General properties for the whole table.
@@ -524,7 +683,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
         $status = array();
         $status[SURVEYPRO_STATUSINPROGRESS] = get_string('statusinprogress', 'mod_surveypro');
-        $status[SURVEYPRO_STATUSCLOSED] = get_string('statusclosed', 'mod_surveypro');
+        $done = ucwords(get_string('statusclosed', 'mod_surveypro'));
+        $status[SURVEYPRO_STATUSCLOSED] = "<i aria-hidden class='fa fa-check' title='$done'></i><span class=\"sr-only\">$done</span>";
 
         $neverstr = get_string('never');
 
@@ -570,17 +730,17 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         }
 
 
-        echo "<h3>Peer assessment for " . $this->peer_assessed_name . "</h3>";
-            if ($this->group_count < 2) {
+        echo "<h3>Peer assessment for " . $this->mpa_cm_name . "</h3>";
+            if ($this->group_total < 2) {
                 if($canseeotherssubmissions) {
-                    echo "<h4>Assessments for group " . $this->group_name . "</h4>";
+                    echo "<h4>Assessments for " . $this->group_name . "</h4>";
                 }
                 else {
-                    echo "<h4>My assessments for group " . $this->group_name . "</h4>";
+                    echo "<h4>My assessments for " . $this->group_name . "</h4>";
                 }
             }
 
-        $table->pagesize(20, $this->pa_total);
+        $table->pagesize(20, $this->mpa_total);
 
         $submissions = $DB->get_recordset_sql($sql, $whereparams, $table->get_page_start(), $table->get_page_size());
 
@@ -590,7 +750,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
             $nonhistoryeditstr = get_string('edit');
             $iconparams['title'] = $nonhistoryeditstr;
-            $nonhistoryediticn = new pix_icon('t/edit', $nonhistoryeditstr, 'moodle', $iconparams);
+            $nonhistoryediticn = new pix_icon('i/edit', $nonhistoryeditstr, 'moodle', $iconparams);
 
             $readonlyaccessstr = get_string('readonlyaccess', 'mod_surveypro');
             $iconparams['title'] = $readonlyaccessstr;
@@ -608,7 +768,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 $linkidprefix = 'edit_submission_';
             }
             $iconparams['title'] = $attributestr;
-            $attributeicn = new pix_icon('t/edit', $attributestr, 'moodle', $iconparams);
+            $attributeicn = new pix_icon('i/edit', $attributestr, 'moodle', $iconparams);
 
             $deletestr = get_string('delete');
             $iconparams['title'] = $deletestr;
@@ -618,10 +778,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             $iconparams['title'] = $downloadpdfstr;
             $downloadpdficn = new pix_icon('i/export', $downloadpdfstr, 'moodle', $iconparams);
 
-            if ($groupmode = groups_get_activity_groupmode($this->cm, $COURSE)) {
-                if ($groupmode == SEPARATEGROUPS) {
+            if ($this->groupmode == SEPARATEGROUPS) {
                     $mygroupmates = surveypro_groupmates($this->cm);
-                }
             }
 
             $tablerowcounter = 0;
@@ -629,7 +787,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
 
             $paramurlbase = array('id' => $this->cm->id);
 
-            $pa_submission = new stdClass();
+            $mpa_submission = new stdClass();
+            $prev_group = "";
             $prev_assessor = "";
 
             foreach ($submissions as $submission) {
@@ -643,7 +802,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                     if (!$canseeotherssubmissions) {
                         continue;
                     }
-                    if ($groupmode == SEPARATEGROUPS) {
+                    if ($this->groupmode == SEPARATEGROUPS) {
                         if ($canaccessallgroups) {
                             $groupuser = true;
                         } else {
@@ -657,44 +816,45 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 $tablerow = array();
 
                 // Group
-                if($this->group_count > 1) {
+                if($this->group_total > 1) {
                     $tablerow[] = $submission->group_name;
                 }
 
                 // Assessor
-                if($canseeotherssubmissions && $prev_assessor == $submission->id) {
+                if($canseeotherssubmissions && $prev_group == $submission->group_name && $prev_assessor == $submission->id) {
                     $tablerow[] = "";
                     $tablerow[] = "";
                 }
                 elseif ($canseeotherssubmissions && ($canalwaysseeowner || empty($this->surveypro->anonymous))) {
-                    $tablerow[] = $OUTPUT->user_picture($submission, array('courseid' => $COURSE->id));
+                    $tablerow[] = $OUTPUT->user_picture($submission, array('courseid' => $this->mpa_cm->course));
 
                     // User fullname.
-                    $paramurl = array('id' => $submission->id, 'course' => $COURSE->id);
+                    $paramurl = array('id' => $submission->id, 'course' => $this->mpa_cm->course);
                     $url = new moodle_url('/user/view.php', $paramurl);
                     $tablerow[] = '<a href="'.$url->out().'">'.fullname($submission).'</a>';
                 }
+                $prev_group = $submission->group_name;
                 $prev_assessor = $submission->id;
 
                 // Assessed user.
-                $pa_submission->id = $submission->pa_id;
-                $pa_submission->picture = $submission->pa_picture;
-                $pa_submission->firstname = $submission->pa_firstname;
-                $pa_submission->lastname = $submission->pa_lastname;
-                $pa_submission->firstnamephonetic = $submission->pa_firstnamephonetic;
-                $pa_submission->lastnamephonetic = $submission->pa_lastnamephonetic;
-                $pa_submission->middlename = $submission->pa_middlename;
-                $pa_submission->alternatename = $submission->pa_alternatename;
-                $pa_submission->imagealt = $submission->pa_imagealt;
-                $pa_submission->email = $submission->pa_email;
+                $mpa_submission->id = $submission->mpa_id;
+                $mpa_submission->picture = $submission->mpa_picture;
+                $mpa_submission->firstname = $submission->mpa_firstname;
+                $mpa_submission->lastname = $submission->mpa_lastname;
+                $mpa_submission->firstnamephonetic = $submission->mpa_firstnamephonetic;
+                $mpa_submission->lastnamephonetic = $submission->mpa_lastnamephonetic;
+                $mpa_submission->middlename = $submission->mpa_middlename;
+                $mpa_submission->alternatename = $submission->mpa_alternatename;
+                $mpa_submission->imagealt = $submission->mpa_imagealt;
+                $mpa_submission->email = $submission->mpa_email;
 
                 if(empty($this->surveypro->anonymous)) {
-                    $tablerow[] = $OUTPUT->user_picture($pa_submission, array('courseid' => $COURSE->id));
+                    $tablerow[] = $OUTPUT->user_picture($mpa_submission, array('courseid' => $this->mpa_cm->course));
 
                     // User fullname.
-                    $paramurl = array('id' => $pa_submission->id, 'course' => $COURSE->id);
+                    $paramurl = array('id' => $mpa_submission->id, 'course' => $this->mpa_cm->course);
                     $url = new moodle_url('/user/view.php', $paramurl);
-                    $tablerow[] = '<a href="' . $url->out() . '">' . fullname($pa_submission) . '</a>';
+                    $tablerow[] = '<a href="' . $url->out() . '">' . fullname($mpa_submission) . '</a>';
                 }
 
                 // Surveypro status.
@@ -703,12 +863,15 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 }
                 else {
                     $tablerow[] = $status[$submission->status];
-                    if($submission->status == 0) {
+                    if($ismine && $submission->status == 0) {
                         $this->response_total++;
                     }
                 }
 
-                $this->response_count = $tablerowcounter;
+                if($ismine) {
+                    $this->response_count++;
+                }
+                #$this->response_count = $tablerowcounter;
 
 
 
@@ -745,7 +908,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                         $displayediticon = $caneditownsubmissions;
                     }
                 } else { // I am not the owner.
-                    if ($groupmode == SEPARATEGROUPS) {
+                    if ($this->groupmode == SEPARATEGROUPS) {
                         $displayediticon = $groupuser && $caneditotherssubmissions;
                     } else { // NOGROUPS || VISIBLEGROUPS.
                         $displayediticon = $caneditotherssubmissions;
@@ -783,7 +946,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 }
                 elseif($submission->id == $USER->id) {
                     $paramurl = $paramurlbase;
-                    $paramurl['paid'] = $pa_submission->id;
+                    $paramurl['paid'] = $mpa_submission->id;
                     $paramurl['view'] = 1;
                     $link = new moodle_url('/mod/surveypro/view_form.php', $paramurl);
                     $paramlink = array('id' => 'new_submission_'.$this->surveypro->id, 'title' => 'New submission');
@@ -855,34 +1018,17 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                 */
                 $tablerow[] = $icons;
 
-                #print_r($tablerow);echo "<br>-----<br>";
-
                 // Add row to the table.
                 $table->add_data($tablerow);
             }
         }
         $submissions->close();
 
+        $this->show_kent_action_buttons($tifirst, $tilast);
+
         $table->summary = get_string('submissionslist', 'mod_surveypro');
         $table->print_html();
 
-        if($this->response_total >= $this->response_count) {
-            if ($this->searchquery){
-                echo '
-            <script type="text/javascript">
-            $(document).ready( function() {
-                $(\'button[type="submit"]:contains("' . get_string("addnewsubmission", "mod_surveypro") . '")\').hide();
-            });
-            </script>';
-            } else {
-                echo '
-            <script type="text/javascript">
-            $(document).ready( function() {
-                $(\'button[type="submit"]:contains("' . get_string("addnewsubmission", "mod_surveypro") . '")\').replaceWith(\'<div class="alert alert-success">All ' . $this->response_total . ' responses are done</div>\');
-            });
-            </script>';
-            }
-        }
 
         // If this is the output of a search add a way to show all submissions.
         if ($this->searchquery) {
