@@ -400,6 +400,9 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         }
         else {
             $mygroups = groups_get_all_groups($this->mpa_cm->course, 0, $this->mpa_cm->groupingid);
+            if(empty($mygroups)) {
+                $mygroups = groups_get_all_groups($this->mpa_cm->course);
+            }
         }
 
         $this->mygroups = array_keys($mygroups);
