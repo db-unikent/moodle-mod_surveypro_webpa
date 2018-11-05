@@ -274,7 +274,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
         $sqlCount = str_replace($sqlSelect, $sqlSelectCount, $sql);
 
         $total = $DB->get_record_sql($sqlCount, $whereparams);
-        $this->mpa_total = $this->mpa_total;
+        $this->mpa_total = $total->mpa_total;
 
         /*
          * SQL Order by group, creation
