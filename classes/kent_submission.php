@@ -523,6 +523,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             $addurl = new moodle_url('/mod/surveypro/view_form.php', array('id' => $this->cm->id, 'view' => SURVEYPRO_NEWRESPONSE));
             $buttoncount = 1;
         }
+        /* Don't offer delete all options
         if ($deleteall) {
             $paramurl = array();
             $paramurl['id'] = $this->cm->id;
@@ -532,7 +533,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             $deleteurl = new moodle_url('/mod/surveypro/view.php', $paramurl);
             $buttoncount++;
         }
-
+        */
         if ($buttoncount == 0) {
             if($message) {
                 echo "</div>";
@@ -548,7 +549,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                     echo "</div>";
                 }
             }
-
+            /* Don't offer delete all options
             if ($deleteall) {
                 $label = get_string('deleteallsubmissions', 'mod_surveypro');
                 echo $OUTPUT->box($OUTPUT->single_button($deleteurl, $label, 'get'), 'clearfix mdl-align');
@@ -556,7 +557,8 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
                     echo "</div>";
                 }
             }
-        } else {
+            */
+        } /*else {
             $class = array('class' => 'buttons');
             $addbutton = new single_button($addurl, get_string('addnewsubmission', 'mod_surveypro'), 'get', $class);
             $deleteallbutton = new single_button($deleteurl, get_string('deleteallsubmissions', 'mod_surveypro'), 'get', $class);
@@ -569,7 +571,7 @@ class mod_surveypro_kent_submission extends mod_surveypro_submission {
             if($message) {
                 echo "</div>";
             }
-        }
+        }*/
     }
 
 
