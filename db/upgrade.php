@@ -255,54 +255,42 @@ function xmldb_surveypro_upgrade($oldversion) {
         $field = new xmldb_field('thankshtmlformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'thankshtml');
 
         // Launch rename field thankshtmlformat.
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->rename_field($table, $field, 'thankspageformat');
-        }
+        $dbman->rename_field($table, $field, 'thankspageformat');
 
         // Rename field thankshtml on table surveypro to thankspage.
         $table = new xmldb_table('surveypro');
         $field = new xmldb_field('thankshtml', XMLDB_TYPE_TEXT, null, null, null, null, null, 'notifycontentformat');
 
         // Launch rename field thankshtml.
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->rename_field($table, $field, 'thankspage');
-        }
+        $dbman->rename_field($table, $field, 'thankspage');
 
         // Rename field notifycontent on table surveypro to NEWNAMEGOESHERE.
         $table = new xmldb_table('surveypro');
         $field = new xmldb_field('notifycontentformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'notifycontent');
 
         // Launch rename field notifycontent.
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->rename_field($table, $field, 'mailcontentformat');
-        }
+        $dbman->rename_field($table, $field, 'mailcontentformat');
 
         // Rename field notifycontent on table surveypro to NEWNAMEGOESHERE.
         $table = new xmldb_table('surveypro');
         $field = new xmldb_field('notifycontent', XMLDB_TYPE_TEXT, null, null, null, null, null, 'notifymore');
 
         // Launch rename field notifycontent.
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->rename_field($table, $field, 'mailcontent');
-        }
+        $dbman->rename_field($table, $field, 'mailcontent');
 
         // Rename field notifymore on table surveypro to NEWNAMEGOESHERE.
         $table = new xmldb_table('surveypro');
         $field = new xmldb_field('notifymore', XMLDB_TYPE_TEXT, null, null, null, null, null, 'notifyrole');
 
         // Launch rename field notifymore.
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->rename_field($table, $field, 'mailextraaddresses');
-        }
+        $dbman->rename_field($table, $field, 'mailextraaddresses');
 
         // Rename field notifyrole on table surveypro to NEWNAMEGOESHERE.
         $table = new xmldb_table('surveypro');
         $field = new xmldb_field('notifyrole', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'maxentries');
 
         // Launch rename field notifyrole.
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->rename_field($table, $field, 'mailroles');
-        }
+        $dbman->rename_field($table, $field, 'mailroles');
 
         // Surveypro savepoint reached.
         upgrade_mod_savepoint(true, 2018032002, 'surveypro');

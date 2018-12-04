@@ -59,21 +59,24 @@ if ($action != SURVEYPRO_NOACTION) {
     require_sesskey();
 }
 
-//Kent check if this is a Moodle Peer Assessment surveypro
+//Kent change - check if this is a Moodle Peer Assessment surveypro
 if($DB->count_records('surveypro_item', array('surveyproid' => $surveypro->id, 'plugin'=> 'paselect'))) {
     $mpa_flag = true;
 } else {
     $mpa_flag = false;
 }
+//End of Kent change
 
 // Calculations.
 $context = context_module::instance($cm->id);
-//Kent
+
+//Kent change - call Kent class if MPA surveypro
 if($mpa_flag) {
     $submissionman = new mod_surveypro_kent_submission($cm, $context, $surveypro);
 } else {
     $submissionman = new mod_surveypro_submission($cm, $context, $surveypro);
 }
+//End of Kent change
 
 $submissionman->setup($submissionid, $action, $view, $confirm, $searchquery);
 
@@ -95,7 +98,7 @@ echo $OUTPUT->header();
 
 new mod_surveypro_tabs($cm, $context, $surveypro, SURVEYPRO_TABSUBMISSIONS, SURVEYPRO_SUBMISSION_MANAGE);
 
-//Kent
+//Kent change - skip thanks page if MPA
 if($mpa_flag) {
     #$submissionman->actions_feedback(); // Action feedback after PAGE.
 
@@ -112,6 +115,7 @@ if($mpa_flag) {
         $submissionman->trigger_event(); // Event: all_submissions_viewed.
     }
 }
+//End of Kent change
 
 // Finish the page.
 echo $OUTPUT->footer();

@@ -398,6 +398,24 @@ EOS;
         return false;
     }
 
+    // MARK response.
+
+    /**
+     * Report how the sql query does fit for this plugin
+     *
+     * @param int $itemid
+     * @param string $searchrestriction
+     * @return the specific where clause for this plugin
+     */
+    public static function response_get_whereclause($itemid, $searchrestriction) {
+        global $DB;
+
+        $whereclause = $DB->sql_like('a.content', ':content_'.$itemid, false);
+        $whereparam = '%'.$searchrestriction.'%';
+
+        return array($whereclause, $whereparam);
+    }
+
     // MARK userform.
 
     /**
@@ -616,7 +634,7 @@ EOS;
                         $label .= $COURSE->id;
                         break;
                     case SURVEYPROFIELD_AUTOFILL_CONTENTELEMENT14: // Coursename.
-                        $label .= $COURSE->fullname;
+                        $label .= $COURSE->name;
                         break;
                     default:                                       // Label.
                         $label .= $this->{'element'.$index};

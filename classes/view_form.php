@@ -1176,7 +1176,7 @@ class mod_surveypro_view_form extends mod_surveypro_formbase {
             }
         }
 
-        //Kent add allow edit
+        //Kent change - allow to edit option added
         if ($this->view == SURVEYPRO_EDITRESPONSE && $submission->status == 0) {
             $where = array('surveyproid' => $submission->surveyproid, 'variable' => 'pa_select_edit');
             $sql = "SELECT options
@@ -1193,6 +1193,7 @@ class mod_surveypro_view_form extends mod_surveypro_formbase {
                 }
             }
         }
+        //End of Kent change
 
         switch ($this->view) {
             case SURVEYPRO_NEWRESPONSE:

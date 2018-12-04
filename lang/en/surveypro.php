@@ -25,7 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['modulename'] = 'Surveypro';
+//Kent change - add description for Moodle Peer Assessment
 $string['modulename_help'] = 'This has been adapted by Kent to incorporate Moodle Peer Assessment (MPA). An MPA can be attached to a current group assignment on this course. Surveypro allows the creation of custom surveys as far as built in surveys like ATTLS, COLLES and CRITICAL INCIDENTS. You can also save and reuse parts or whole of your own custom survey.';
+//End Kent change
 $string['modulename_link'] = 'mod/surveypro/view';
 $string['modulenameplural'] = 'surveys';
 $string['pluginname'] = 'Surveypro';
